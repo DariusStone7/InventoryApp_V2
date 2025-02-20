@@ -1,74 +1,120 @@
-import { Image, StyleSheet, Platform } from 'react-native';
+import { Text, View, StyleSheet, Pressable, ScrollView } from "react-native";
+import * as DocumentPicker from "expo-document-picker"
+import Button from "@/components/button";
+import { useState } from "react";
+import * as FileSystem from 'expo-file-system';
+import { useRouter, Link, useNavigation } from "expo-router";
+import ModalInfo from "@/components/modal";
 
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
 
-export default function HomeScreen() {
+export default function Index() {
+
+  const router = useRouter();
+  const navigation = useNavigation();
+
+  const [selectedFileUri, setSelectedFileUri] = useState<string>();
+  const [selectedFileName, setSelectedFileName] = useState<string | undefined>();
+  const [selectedFileData, setSelectedFileData] = useState<string | undefined>();
+  let [fileErrorModalIsVisible, setFileErrorModalIsVisible] = useState<boolean>(false);
+  let [notFileModalIsVisible, setNotFileModalIsVisible] = useState<boolean>(false);
+  let [errorModal, setErrorModal] = useState<boolean>(false);
+  let [error, setError] = useState<any>();
+
+  const documentPicker = async()=>{
+
+    setSelectedFileData("");
+    setSelectedFileName("");
+    // setSelectedFileUri("");
+    
+    try{
+      let result = await DocumentPicker.getDocumentAsync({
+        type: "text/plain",
+        copyToCacheDirectory: true,
+      });
+  
+      if(!result.canceled){
+        
+        console.log(result);
+
+        setSelectedFileName(result.assets[0].name);
+
+        if(!(result.assets[0].name).toLowerCase()?.endsWith(".txt")){
+
+          setFileErrorModalIsVisible(true);
+          setSelectedFileName("");
+
+          return;
+        }
+
+        setSelectedFileUri(result.assets[0].uri);
+        
+        let fileData = await FileSystem.readAsStringAsync(result.assets[0].uri, {encoding: FileSystem.EncodingType.UTF8});
+        setSelectedFileData(fileData);
+        // console.log(fileData)
+      }
+      else{
+        setNotFileModalIsVisible(true)
+      }
+    }catch(e){
+      setSelectedFileData("");
+      setSelectedFileName("");
+      setSelectedFileUri("");
+      setErrorModal(true);
+      setError("Une erreur est survenue: " + e);
+    }
+    
+
+  }
+
+
+  const goToEditscreen = () => {
+
+    let data = selectedFileData?.split(/\r?\n/);
+    console.log(data?.length)
+    console.log(data)
+    router.push(`/details?fileData=${data}&fileUri=${selectedFileUri}&fileName=${selectedFileName}`);
+
+  }
+
+
+  //fermeture du modal
+  const closeModal = () => {
+      
+    setFileErrorModalIsVisible(false);
+    setNotFileModalIsVisible(false);
+    setErrorModal(false);
+
+  }
+
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12'
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          Tap the Explore tab to learn more about what's included in this starter app.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          When you're ready, run{' '}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+    <View className="flex items-center justify-center bg-[#eff5f7] h-full">
+     <View className="flex items-center justify-center h-80 pb-24">
+        <Text className="text-xl mb-3 text-center"> Appuyer sur le bouton pour ouvrir une fiche d'inventaire </Text>
+        <Button label="Ouvrir" icon="file-tray-outline" onPress={documentPicker} type="primary"/>
+        {/* <Text style={styles.text}>fichier selectionné: {selectedFileName}</Text> */}
+      </View>
+      { selectedFileName ? (
+        <View className="w-full absolute bottom-0">
+          <View className="flex flex-row justify-between items-center bg-white p-3" >
+            <Text className="text-xl w-[50%]"> { selectedFileName.length > 16 ? selectedFileName.slice(0, 18) : selectedFileName}... </Text>
+            <Button label="Editer" icon="pencil-sharp" onPress={goToEditscreen} type="outline"/>
+          </View>
+          <ScrollView className="border border-t-1 border-gray-200 max-h-[250px] overflow-scroll bg-white" >
+            <Text>{selectedFileData}</Text>
+          </ScrollView>
+        </View>
+      ) : (
+        <View></View>
+      )}
+
+      <ModalInfo icon={"warning"} iconColor="#ff9900" isVisible={fileErrorModalIsVisible} message="Vueillez selectionner un fichier texte (.txt) !" buttonText="OK" onClose={closeModal}/>
+      <ModalInfo icon={"warning"} iconColor="#ff9900" isVisible={notFileModalIsVisible} message="Vous n'avez selectionné aucun fichier !" buttonText="Réessayer" onClose={closeModal}/>
+      <ModalInfo icon={"error"} iconColor="#ff9900" isVisible={errorModal} message={error} buttonText="Réessayer" onClose={closeModal}/>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-  },
-});
+ 
+})
