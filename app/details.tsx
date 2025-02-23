@@ -9,10 +9,11 @@ import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { TextInput, ActivityIndicator } from 'react-native-paper';
 import ModalInfo from "@/components/modal";
+import * as SQLite from 'expo-sqlite';
 
 export default function DetailsScreen(){
 
-    const { fileData, fileUri, fileName } = useLocalSearchParams();
+    const { idInventory } = useLocalSearchParams();
     let [products, setProducts] = useState<Product[]>([]);
     let [currentProducts, setcurrentProducts] = useState<Product[]>([]);
     let [refreshing, setRefreshing] = useState<boolean>(false);
@@ -25,16 +26,18 @@ export default function DetailsScreen(){
     let [saveErrorModal, setSaveErrorModal] = useState<boolean>(false);
     let [formatErrorModal, setFormatErrorModal] = useState<boolean>(false);
     let [error, setError] = useState<any>();
+    let [db, setDb] = useState<any>();
 
 
     //initialisation de la liste de produits lorsque le composant est monté
     useEffect( () => {
+        
+        initProducts().then((productsList) => {
+            setcurrentProducts(productsList);
+            setProducts(productsList);
+        });
 
-        let productsList = initProducts(fileData);
-
-        setcurrentProducts(productsList);
-        setProducts(productsList);
-
+        
     }, []);
 
 
@@ -49,24 +52,22 @@ export default function DetailsScreen(){
 
 
     //Formatage du contenu du fichier en un tableau de produit
-    const initProducts = (data : string | string[]) => {
-        console.log(data.length)
-        console.log(data)
+    const initProducts = async () => {
+        console.log('id_inventory; ', idInventory)
         try{
+            const con = await SQLite.openDatabaseAsync('test');
+            db = con
+            setDb(db)
 
-            data = (fileData.toString()).split(',');
-            data = data.filter( item => item !== "" );
-                
+            let data = await db.getAllAsync(`SELECT * FROM product WHERE id_inventory=${idInventory}`)
+            console.log('products: ', data)
+
             let products = [] as Product[];
     
-            data.forEach( (line) => {
+            data.forEach( (row: any) => {
     
-                let lineSplit = line.split(";");
-                let name = lineSplit[1].slice(0, lineSplit[1].indexOf('('));
-                let cdt = lineSplit[1].slice(lineSplit[1].indexOf('('), lineSplit[1].length);
-    
-                let product = new Product(lineSplit[0], name, cdt, Number(lineSplit[2]));
-        
+                let product = new Product(row.id_product, row.name, row.conditionment, row.quantity);
+                
                 products.push(product);
     
             });
@@ -80,7 +81,6 @@ export default function DetailsScreen(){
             setError("Erreur lors du traitement du fichier \nLa structure du fichier est incorrecte !\n" + e);
             setFormatErrorModal(true);
         }
-        console.log(products)
         return products;
 
     }
@@ -88,8 +88,6 @@ export default function DetailsScreen(){
 
     //Filtre de la liste des produits en fonction de la valeur de recherche saisie
     const filterProducts = (key:string) => {
-        console.log(products.length)
-        console.log(products)
         
         // setSearching(false)
         currentProducts = products;
@@ -113,14 +111,30 @@ export default function DetailsScreen(){
         
     }
 
+    const removeSearchKey = () => {
+        setSearchText("")
+        filterProducts("")
+    }
 
+
+
+    
     //Mis à jour de la quantité du produit selectionné avec la nouvelle valeur saisir
-    const updateQuantity = (quantity: string) => {
+    const updateQuantity = async (quantity: string) => {
         
+        const updateProductQuantity = await db.prepareAsync(
+            'UPDATE product SET quantity = $quantity WHERE id_product = $id_product'
+        );
+
         let product = new Product(selectedPoduct?.getId(), selectedPoduct?.getName(), selectedPoduct?.getCondtionment(), selectedPoduct?.getQuantity());
 
         product?.setQuantity(Number(quantity));
+        
+        //Mise à jour dans la base de donnée
+        let result = await updateProductQuantity.executeAsync({$quantity: product.getQuantity(), $id_product: product.getId()})
+        console.log('Mise à jour en bd',result)
 
+        //Mise à jour dans la liste
         setSelectedProduct(product);
 
         //mise à jour de la quantité dans la liste courante
@@ -197,7 +211,7 @@ export default function DetailsScreen(){
         if(permission.granted){
 
             //Création et enregistrement du nouveau fichier
-            await FileSystem.StorageAccessFramework.createFileAsync(permission.directoryUri, fileName.toString(), "text/plain")
+            await FileSystem.StorageAccessFramework.createFileAsync(permission.directoryUri, 'Inventaire', "text/plain")
                 .then( async (uri) => {
                     let data = formatFileData();
                     FileSystem.writeAsStringAsync(uri, data, { encoding: FileSystem.EncodingType.UTF8 })
@@ -222,7 +236,7 @@ export default function DetailsScreen(){
     //Partager le fichier
     const shareFile = async () => {
 
-        const newFileUri = `${FileSystem.documentDirectory}${fileName}`;
+        const newFileUri = `${FileSystem.documentDirectory}Inventaire`;
         let data = formatFileData();
 
         FileSystem.writeAsStringAsync(newFileUri, data, { encoding: FileSystem.EncodingType.UTF8 })
@@ -251,8 +265,7 @@ export default function DetailsScreen(){
     //Vue à afficher à l'écran
     return (
         
-        <View style={ {paddingVertical: 20, paddingHorizontal:10, backgroundColor: "#eff5f7",} }>
-
+        <View className="p-3 bg-[#eff5f7] h-screen" >
             <Stack.Screen 
                 options={{
                     headerRight: () => 
@@ -278,7 +291,7 @@ export default function DetailsScreen(){
                 
                 style = { styles.seachInput }
                 right = {
-                    <TextInput.Icon  icon={"close"} color={"#00000061"} /> 
+                    <TextInput.Icon onPress={removeSearchKey}  icon={"close"} color={"#00000061"} /> 
                 }
                 left = {
                     <TextInput.Icon  icon={searching ? "" : "magnify"} color={"#00000061"} /> 
@@ -297,14 +310,14 @@ export default function DetailsScreen(){
                     ({item, index}) => <Text onPress={()=>{openModal(item, index)}} style={styles.productCard}> <ProductComponent product={item}/> </Text>
                 }
                 keyExtractor={(item) => item.getId()}
-                contentContainerStyle = {styles.flatlistContainer}
                 refreshing={refreshing}
                 onRefresh={onRefresh}
                 style={styles.flatlist}
                 showsVerticalScrollIndicator={ false } 
                 ListFooterComponent={ () => <Text> Nombre de Produits: { currentProducts.length } / { products.length } </Text> }
                 ListEmptyComponent={ () => <Text style={ {color: "#ff9900"} }> Aucun produit trouvé ! </Text> }
-                
+                ListFooterComponentStyle = {{position: "absolute", bottom: 0}}
+                contentContainerStyle = {styles.flatlistContainer}
             />
 
             <Modal transparent={ true } animationType="slide" visible={ modalVisible } onPointerLeave={ () => setModalVisible(false) }>
@@ -333,7 +346,7 @@ export default function DetailsScreen(){
                 </KeyboardAvoidingView>
             </Modal>
 
-            <ModalInfo icon={"checkmark-circle-sharp"} iconColor="#02c4ba" isVisible={saveModal} message="Fichier enregistré avec succès !             " buttonText="OK" onClose={closeSaveModal}/>
+            <ModalInfo icon={"checkmark-circle-sharp"} iconColor="#02c4ba" isVisible={saveModal} message="Fichier enregistré avec succès !" buttonText="OK" onClose={closeSaveModal}/>
             <ModalInfo icon={"warning"} iconColor="#ff9900" isVisible={saveErrorModal} message={error} buttonText="Réessayer" onClose={closeSaveModal}/>
             <ModalInfo icon={"warning"} iconColor="#ff9900" isVisible={formatErrorModal} message={error} buttonText="Réessayer" onClose={closeSaveModal}/>
 
@@ -351,6 +364,7 @@ const styles = StyleSheet.create({
     },
     flatlistContainer:{
         gap: 8,
+        paddingBottom: 80
     },
     seachInput:{
         backgroundColor: "#fff",

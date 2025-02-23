@@ -21,9 +21,9 @@ export default function modal({icon, iconColor, isVisible, message, buttonText, 
                     <View>
                         <Ionicons className="text-center" name={icon} color={iconColor} size={24}></Ionicons>
                         
-                        <ScrollView className="min-w-full overflow-scroll my-2">
+                        <ScrollView className="min-w-full overflow-scroll my-2 h-[80px]">
                             <View className="flex items-center justify-center min-h-full">
-                                <Text className="text-md text-gray-600 text-center">{message}</Text>
+                                <Text className="text-md text-gray-600 text-center">{message} </Text>
                             </View>
                         </ScrollView>
 

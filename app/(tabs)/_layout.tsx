@@ -5,7 +5,7 @@ import { StatusBar } from "expo-status-bar";
 export default function TabLayout() {
   return (
     <>
-      <StatusBar style="light" />
+      <StatusBar style="light"/>
       <Tabs
         screenOptions={{
           tabBarActiveTintColor: "#025c57",
@@ -14,6 +14,7 @@ export default function TabLayout() {
         <Tabs.Screen
           name="index"
           options={{
+            title: "Accueil",
             headerShown: false,
             tabBarIcon: ({ color, focused }) => (
               <Ionicons
@@ -25,14 +26,14 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
-          name="about"
+          name="inventory"
           options={{
-            title: "A propos",
+            title: "Inventaires",
             headerShown: false,
             tabBarIcon: ({ color, focused }) => (
               <Ionicons
                 name={
-                  focused ? "information-circle" : "information-circle-outline"
+                  focused ? "layers-sharp" : "layers-outline"
                 }
                 color={color}
                 size={24}
