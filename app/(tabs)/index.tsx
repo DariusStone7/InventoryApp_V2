@@ -7,7 +7,7 @@ import { useRouter, Link, useNavigation } from "expo-router";
 import ModalInfo from "@/components/modal";
 import Product from "@/models/Product";
 import * as SQLite from 'expo-sqlite';
-
+import connectToDatabse from "@/utils/database/database";
 
 export default function Index() {
 
@@ -31,7 +31,8 @@ export default function Index() {
 
    //Connexion à la base de données
    const getDatabaseConnection = async () => {
-      db = await SQLite.openDatabaseAsync('test');
+    db = await connectToDatabse()
+      // db = await SQLite.openDatabaseAsync('test');
       setDb(db)
   }
 

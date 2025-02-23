@@ -27,7 +27,7 @@ export default function AboutScreen() {
             inventories.push(inventory)
         })
 
-        setInventories(inventories)
+        await setInventories(inventories)
     }
 
     const onRefresh = async () => {
