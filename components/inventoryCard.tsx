@@ -10,11 +10,11 @@ type InventoryProps = {
 export default function InventoryCard (props: InventoryProps) {
     
     return(
-        <View className="h-[150px] border-1 border-gray-200 bg-white w-[150px] p-3">
-            <View className="h-[100px] flex items-center justify-center">
+        <View className="h-[100px] border-1 border-gray-200 bg-white w-[100px] p-3">
+            <View className="h-[60px] flex items-center justify-center">
                 <Ionicons name="cube" size={48} color="lightgray" />
             </View>
-            <Text className="truncate">{props.inventory.getTitle()}</Text>
+            <Text className="text-gray-600 text-sm truncate h-5">{props.inventory.getTitle()}</Text>
         </View>
     )
 }

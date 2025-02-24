@@ -29,7 +29,7 @@ export default function Index() {
     getDatabaseConnection()
   }, [])
 
-   //Connexion à la base de données
+   //Création et Connexion à la base de données
    const getDatabaseConnection = async () => {
     db = await connectToDatabse()
       // db = await SQLite.openDatabaseAsync('test');
@@ -96,7 +96,7 @@ export default function Index() {
   const importInventory = async () => {
 
     const idInventory = await createInventory()
-    console.log('inventory:',idInventory)
+    console.log('inventory:', idInventory)
 
     let products = [] as Product[];
 
@@ -125,11 +125,12 @@ export default function Index() {
 
           });
           // console.log(products)
-
+          setSelectedFileData("");
+          setSelectedFileName("");
+          setSelectedFileUri("");
           router.push('/inventory');
       }
       catch(e){
-
           setError("Erreur lors du traitement du fichier: \n" + e);
           setFormatErrorModal(true);
       }
@@ -159,18 +160,17 @@ export default function Index() {
 
   return (
     <View className="flex items-center justify-center bg-[#eff5f7] h-full">
-     <View className="flex items-center justify-center h-80 pb-24">
+     <View className="flex flex-1 items-center justify-center">
         <Text className="text-xl mb-3 text-center"> Appuyer sur le bouton pour ouvrir une fiche d'inventaire </Text>
         <Button label="Ouvrir" icon="file-tray-full-outline" onPress={documentPicker} type="primary"/>
-        {/* <Text style={styles.text}>fichier selectionné: {selectedFileName}</Text> */}
-      </View>
+     </View>
       { selectedFileName ? (
-        <View className="w-full absolute bottom-0">
-          <View className="flex flex-row justify-between items-center bg-white p-3" >
-            <Text className="text-xl w-[50%]"> { selectedFileName.length > 16 ? selectedFileName.slice(0, 18) : selectedFileName}... </Text>
+        <View className="w-full ">
+          <View className="flex flex-row gap-2 justify-between items-center bg-white p-3" >
+            <Text className="text-xl flex-1 h-5 text-base overflow-x-scroll"> {selectedFileName}</Text>
             <Button label="Importer" icon="arrow-redo-circle-outline" onPress={importInventory} type="outline"/>
           </View>
-          <ScrollView className="border border-t-1 border-gray-200 max-h-[250px] overflow-scroll bg-white" >
+          <ScrollView className="border border-t-1 border-gray-200 h-[250px] overflow-scroll bg-white" >
             <Text>{selectedFileData}</Text>
           </ScrollView>
         </View>

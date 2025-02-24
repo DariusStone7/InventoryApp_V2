@@ -27,7 +27,7 @@ export default function AboutScreen() {
             inventories.push(inventory)
         })
 
-        await setInventories(inventories)
+        setInventories(inventories)
     }
 
     const onRefresh = async () => {
@@ -42,7 +42,7 @@ export default function AboutScreen() {
     }
 
     return (
-        <View className="flex items-center justify-center h-dvh bg-[#eff5f7]">
+        <View className="flex items-center justify-center h-dvh bg-[#eff5f7] pt-10">
             <FlatList 
                 data={inventories}
                 renderItem={
@@ -51,12 +51,12 @@ export default function AboutScreen() {
                 refreshing={refreshing}
                 onRefresh={onRefresh}
                 keyExtractor={(item) => item.getIdInventory().toString()}
+                showsVerticalScrollIndicator={false}
                 ListFooterComponent={ () => <Text> Total inventaires: { inventories.length } </Text> }
                 ListEmptyComponent={ () => <Text style={ {color: "#ff9900"} }> Aucun inventaires trouvé ! </Text> }
                 ListFooterComponentStyle = {{position: "absolute", bottom: 0}}
-                contentContainerStyle={{display: "flex", flexDirection:"column", alignItems: "center", justifyContent: "center", minHeight:"100%", width: "100%", overflow: "scroll",}}
+                contentContainerStyle={{display: "flex", gap:15, flexDirection:"row", flexWrap:"wrap", alignItems: "center", minHeight:"100%", width: "100%",}}
             />
-             {/* {inventories.map((inventory, index) => ( <Text><InventoryCard inventory={inventory}/></Text> ))} */}
         </View>
        
     )
