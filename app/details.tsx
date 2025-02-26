@@ -51,7 +51,7 @@ export default function DetailsScreen(){
     }
 
 
-    //Formatage du contenu du fichier en un tableau de produit
+    //Recupérer la liste des produits correspondant à l'inventaire sélectionné
     const initProducts = async () => {
         console.log('id_inventory; ', idInventory)
         try{
@@ -78,7 +78,7 @@ export default function DetailsScreen(){
         }
         catch(e){
 
-            setError("Erreur lors du traitement du fichier \nLa structure du fichier est incorrecte !\n" + e);
+            setError("Erreur lors de la récupération des produits" + e);
             setFormatErrorModal(true);
         }
         return products;
@@ -108,15 +108,13 @@ export default function DetailsScreen(){
         setcurrentProducts(result);
 
         // setSearching(true);
-        
     }
+
 
     const removeSearchKey = () => {
         setSearchText("")
         filterProducts("")
     }
-
-
 
     
     //Mis à jour de la quantité du produit selectionné avec la nouvelle valeur saisir
@@ -130,9 +128,9 @@ export default function DetailsScreen(){
 
         product?.setQuantity(Number(quantity));
         
-        //Mise à jour dans la base de donnée
+        //Mise à jour de la quantité du produit dans la base de donnée
         let result = await updateProductQuantity.executeAsync({$quantity: product.getQuantity(), $id_product: product.getId()})
-        console.log('Mise à jour en bd',result)
+        console.log('Mise à jour en bd', result)
 
         //Mise à jour dans la liste
         setSelectedProduct(product);
@@ -161,7 +159,6 @@ export default function DetailsScreen(){
 
     //Traitement lors de l'ouverture du modal
     const openModal = (product : Product, index: Number) => {
-
         setSelectedProduct(product);
         setSelectedIndex(index);
         setModalVisible(true);
@@ -172,7 +169,6 @@ export default function DetailsScreen(){
 
     //Traitement lors de la cloture du modal de modification de la quantité d'un produit
     const closeModal = () => {
-        
         setModalVisible(false);
         console.log('Produit mis à jour: ', products[Number(selectedIndex)]);
 
@@ -181,7 +177,6 @@ export default function DetailsScreen(){
 
     //Cloture du modal aprés enregistrement du fichier
     const closeSaveModal = () => {
-        
         setSaveModal(false);
         setSaveErrorModal(false);
         setFormatErrorModal(false);
@@ -189,16 +184,13 @@ export default function DetailsScreen(){
 
 
     const formatFileData = ()=>{
- 
         let data = "";
-
         //Reconstitution du contenu du fichier
         products.forEach( (product) => {
             data += product.getId() + ";" + product.getName() + product.getCondtionment() + ";" + product.getQuantity() + "\r\n";
         });
 
         return data;
-
     }
 
 
@@ -241,9 +233,9 @@ export default function DetailsScreen(){
 
         FileSystem.writeAsStringAsync(newFileUri, data, { encoding: FileSystem.EncodingType.UTF8 })
             .catch(e => {
-                setError("Une erreur est survenue lors du partage du fichier:  \n" + e);
+                setError("Une erreur est survenue lors de la génération du fichier:  \n" + e);
                 setSaveErrorModal(true);
-                console.log("Une erreur est survenue lors du partage du fichier:  \n" + e);
+                console.log("Une erreur est survenue lors de la génération du fichier:  \n" + e);
             });
         
         await Sharing.shareAsync(newFileUri)

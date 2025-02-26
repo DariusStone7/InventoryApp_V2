@@ -33,4 +33,7 @@ export default class Inventory {
     }
 
     //setters
+    public setStatus(idStatus: number): void{
+        this.id_status = idStatus;
+    }
 }

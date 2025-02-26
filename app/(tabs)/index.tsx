@@ -3,7 +3,7 @@ import * as DocumentPicker from "expo-document-picker"
 import Button from "@/components/button";
 import { useState, useEffect } from "react";
 import * as FileSystem from 'expo-file-system';
-import { useRouter, Link, useNavigation } from "expo-router";
+import { useRouter, useNavigation } from "expo-router";
 import ModalInfo from "@/components/modal";
 import Product from "@/models/Product";
 import * as SQLite from 'expo-sqlite';
@@ -167,7 +167,7 @@ export default function Index() {
       { selectedFileName ? (
         <View className="w-full ">
           <View className="flex flex-row gap-2 justify-between items-center bg-white p-3" >
-            <Text className="text-xl flex-1 h-5 text-base overflow-x-scroll"> {selectedFileName}</Text>
+            <Text className="text-xl flex-1 h-6 text-base overflow-x-scroll"> {selectedFileName}</Text>
             <Button label="Importer" icon="arrow-redo-circle-outline" onPress={importInventory} type="outline"/>
           </View>
           <ScrollView className="border border-t-1 border-gray-200 h-[250px] overflow-scroll bg-white" >
