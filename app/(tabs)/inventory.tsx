@@ -35,7 +35,7 @@ export default function AboutScreen() {
         inventories = []
         setInventories(inventories)
 
-        const result = await db.getAllAsync('SELECT * FROM inventory')
+        const result = await db.getAllAsync('SELECT * FROM inventory ORDER BY created_at ASC')
         result.forEach((row: any) => {
             let inventory = new Inventory(row.id_inventory, row.id_status, row.title, row.created_at, row.update_at);
             console.log(inventory)
@@ -57,7 +57,7 @@ export default function AboutScreen() {
     //Go to détails screen
     const goToEditscreen = (idInventory: number) => {
         console.log(idInventory)
-        router.push(`/details?idInventory=${idInventory}`)
+        router.navigate(`/details?idInventory=${idInventory}`)
     }
 
 
@@ -214,7 +214,7 @@ export default function AboutScreen() {
                 <FlatList 
                     data={inventories}
                     renderItem={
-                        ({item, index}) => <Text onPress={() => openModal(item, index)}><InventoryCard inventory={item} /> </Text>
+                        ({item, index}) => <Text> <InventoryCard inventory={item} openActionMenu={() => openModal(item, index)} /> </Text>
                     }
                     refreshing={refreshing}
                     onRefresh={onRefresh}
@@ -291,7 +291,7 @@ export default function AboutScreen() {
 //définition des styles
 const styles = StyleSheet.create({
     modal:{
-       backgroundColor: "#dfeaee",
+       backgroundColor: "#ffffff",
        width: "100%",
        height: "auto",
        position: "absolute",

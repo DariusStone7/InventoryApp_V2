@@ -128,7 +128,7 @@ export default function Index() {
           setSelectedFileData("");
           setSelectedFileName("");
           setSelectedFileUri("");
-          router.push('/inventory');
+          router.navigate('/inventory');
       }
       catch(e){
           setError("Erreur lors du traitement du fichier: \n" + e);

@@ -1,5 +1,7 @@
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Dimensions, Modal, KeyboardAvoidingView, Platform, PermissionsAndroid, } from "react-native";
 import { useLocalSearchParams } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
+import { useCallback } from "react";
 import { useState, useEffect } from "react";
 import Product from "@/models/Product";
 import ProductComponent from "@/components/productCard";
@@ -28,6 +30,13 @@ export default function DetailsScreen(){
     let [error, setError] = useState<any>();
     let [db, setDb] = useState<any>();
 
+
+    useFocusEffect( () => {
+        initProducts().then((productsList) => {
+            setcurrentProducts(productsList);
+            setProducts(productsList);
+        });
+    })
 
     //initialisation de la liste de produits lorsque le composant est monté
     useEffect( () => {
@@ -119,19 +128,11 @@ export default function DetailsScreen(){
     
     //Mis à jour de la quantité du produit selectionné avec la nouvelle valeur saisir
     const updateQuantity = async (quantity: string) => {
-        
-        const updateProductQuantity = await db.prepareAsync(
-            'UPDATE product SET quantity = $quantity WHERE id_product = $id_product'
-        );
 
         let product = new Product(selectedPoduct?.getId(), selectedPoduct?.getName(), selectedPoduct?.getCondtionment(), selectedPoduct?.getQuantity());
 
         product?.setQuantity(Number(quantity));
         
-        //Mise à jour de la quantité du produit dans la base de donnée
-        let result = await updateProductQuantity.executeAsync({$quantity: product.getQuantity(), $id_product: product.getId()})
-        console.log('Mise à jour en bd', result)
-
         //Mise à jour dans la liste
         setSelectedProduct(product);
 
@@ -153,6 +154,15 @@ export default function DetailsScreen(){
         });
         
         setProducts(products);
+
+        const updateProductQuantity = await db.prepareAsync(
+            'UPDATE product SET quantity = $quantity WHERE id_product = $id_product'
+        );
+
+        //Mise à jour de la quantité du produit dans la base de donnée
+        let result = await updateProductQuantity.executeAsync({$quantity: product.getQuantity(), $id_product: product.getId()})
+        console.log('Mise à jour en bd', result)
+
 
     }
 
@@ -259,13 +269,13 @@ export default function DetailsScreen(){
         
         <View className="p-3 bg-[#eff5f7] h-screen" >
             <Stack.Screen 
-                options={{
-                    headerRight: () => 
-                    <View style={styles.buttons}>
-                         <Ionicons name="save-outline" color="#fff" size={20} onPress={saveInventoryToFile}></Ionicons>
-                         <Ionicons name="share-social-outline" color="#fff" size={20} onPress={shareFile}></Ionicons> 
-                    </View> 
-                }}
+                // options={{
+                //     headerRight: () => 
+                //     <View style={styles.buttons}>
+                //          <Ionicons name="save-outline" color="#fff" size={20} onPress={saveInventoryToFile}></Ionicons>
+                //          <Ionicons name="share-social-outline" color="#fff" size={20} onPress={shareFile}></Ionicons> 
+                //     </View> 
+                // }}
              />
     
             <TextInput 
