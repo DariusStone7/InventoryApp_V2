@@ -2,7 +2,7 @@ import * as SQLite from 'expo-sqlite';
 
 const connectToDatabse = async () => {
 
-    await SQLite.deleteDatabaseAsync('test')
+    // await SQLite.deleteDatabaseAsync('test')
     const db = await SQLite.openDatabaseAsync('test');
     console.log('Connection à la base de donnée: ', db)
     
