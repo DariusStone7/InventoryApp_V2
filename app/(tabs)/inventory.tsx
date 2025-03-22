@@ -196,7 +196,7 @@ export default function AboutScreen() {
  
          data.forEach( (row: any) => {
  
-             let product = new Product(row.id_product, row.name, row.conditionment, row.quantity);
+             let product = new Product(row.id_product, row.id_conditionnement, row.name, row.conditionment, row.quantity);
              
              products.push(product);
  
@@ -210,7 +210,7 @@ export default function AboutScreen() {
         let data = "";
         //Reconstitution du contenu du fichier
         products.forEach( (product) => {
-            data += product.getId() + ";" + product.getName() + product.getCondtionment() + ";" + product.getQuantity() + "\r\n";
+            data += product.getIdConditionnement() + ";" + product.getName() + product.getCondtionment() + ";" + product.getQuantity() + "\r\n";
         });
 
         return data;

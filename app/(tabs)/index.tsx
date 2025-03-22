@@ -108,7 +108,7 @@ export default function Index() {
           data = data?.filter( item => item !== "" );
               
           const insertProduct = await db.prepareAsync(
-            'INSERT INTO product (id_product, id_inventory, name, conditionment, quantity) VALUES ($id_product, $id_inventory, $name, $conditionment, $quantity)'
+            'INSERT INTO product (id_conditionnement, id_inventory, name, conditionment, quantity) VALUES ($id_conditionnement, $id_inventory, $name, $conditionment, $quantity)'
           );
 
            await data?.forEach( async (line) => {
@@ -117,9 +117,9 @@ export default function Index() {
               let name = lineSplit[1].slice(0, lineSplit[1].indexOf('('));
               let cdt = lineSplit[1].slice(lineSplit[1].indexOf('('), lineSplit[1].length);
 
-              let product = new Product(lineSplit[0], name, cdt, Number(lineSplit[2]));
+              let product = new Product(lineSplit[0] + '1', lineSplit[0], name, cdt, Number(lineSplit[2]));
               
-              let result = await insertProduct.executeAsync({$id_product:product.getId() ,$id_inventory: idInventory, $name: product.getName(), $conditionment: product.getCondtionment(), $quantity: product.getQuantity()})
+              let result = await insertProduct.executeAsync({$id_conditionnement:product.getIdConditionnement() ,$id_inventory: idInventory, $name: product.getName(), $conditionment: product.getCondtionment(), $quantity: product.getQuantity()})
               console.log('product:', result.lastInsertRowId, result.changes);
               products.push(product);
 

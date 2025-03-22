@@ -78,7 +78,7 @@ export default function DetailsScreen(){
     
             data.forEach( (row: any) => {
     
-                let product = new Product(row.id_product, row.name, row.conditionment, row.quantity);
+                let product = new Product(row.id_product, row.id_conditionnement, row.name, row.conditionment, row.quantity);
                 
                 products.push(product);
     
@@ -132,7 +132,7 @@ export default function DetailsScreen(){
     //Mis à jour de la quantité du produit selectionné avec la nouvelle valeur saisir
     const updateQuantity = async (quantity: string) => {
 
-        let product = new Product(selectedPoduct?.getId(), selectedPoduct?.getName(), selectedPoduct?.getCondtionment(), selectedPoduct?.getQuantity());
+        let product = new Product(selectedPoduct?.getId(), selectedPoduct?.getIdConditionnement(), selectedPoduct?.getName(), selectedPoduct?.getCondtionment(), selectedPoduct?.getQuantity());
 
         product?.setQuantity(Number(quantity));
         
