@@ -9,9 +9,12 @@ import * as FileSystem from 'expo-file-system';
 import Product from "@/models/Product";
 import ModalInfo from "@/components/modal";
 import * as Sharing from 'expo-sharing';
+import { useFocusEffect } from "expo-router";
+import { useCallback } from "react";
 
 export default function AboutScreen() {
     let [inventories, setInventories] = useState<Inventory[]>([])
+    let [currentInventories, setCurrentInventories] = useState<Inventory[]>([])
     let [refreshing, setRefreshing] = useState<boolean>(false);
     const router = useRouter()
     let [modalVisible, setModalVisible] = useState<boolean>(false);
@@ -19,12 +22,25 @@ export default function AboutScreen() {
     let [selectedIndex, setSelectedIndex] = useState<number>();
     let [db, setDb] = useState<any>();
     let [exportModal, setExportModal] = useState<boolean>(false);
+    let [closeInventoryModal, setCloseInventoryModal] = useState<boolean>(false);
     let [errorExportModal, setErrorExportModal] = useState<boolean>(false);
     let [error, setError] = useState<any>();
+    let [filter, setFilter] = useState<string>('all')
 
-    useEffect( () => {
-        getInventories()
-    }, [])
+     //initialisation de la liste de produits lorsque l'ecran est focus
+    useFocusEffect(
+        useCallback(() => {
+            getInventories().then((inventories) => {
+                setInventories(inventories)
+                setCurrentInventories(inventories)
+            })
+            setFilter('all')
+        }, [])
+    );
+
+    // useEffect( () => {
+    //     getInventories()
+    // }, [])
 
 
     //Get all inventories in database
@@ -38,11 +54,11 @@ export default function AboutScreen() {
         const result = await db.getAllAsync('SELECT * FROM inventory ORDER BY created_at ASC')
         result.forEach((row: any) => {
             let inventory = new Inventory(row.id_inventory, row.id_status, row.title, row.created_at, row.update_at);
-            console.log(inventory)
+            // console.log(inventory)
             inventories.push(inventory)
         })
 
-        setInventories(inventories)
+       return inventories
     }
 
     
@@ -56,8 +72,9 @@ export default function AboutScreen() {
 
     //Go to détails screen
     const goToEditscreen = (idInventory: number) => {
-        console.log(idInventory)
+        // console.log(idInventory)
         router.navigate(`/details?idInventory=${idInventory}`)
+        closeModal()
     }
 
 
@@ -74,7 +91,7 @@ export default function AboutScreen() {
     //close action menu modal
     const closeModal = () => {
         setModalVisible(false);
-        console.log('Inventaires mis à jour: ', inventories[Number(selectedIndex)]);
+        // console.log('Inventaires mis à jour: ', inventories[Number(selectedIndex)]);
     }
 
      //Cancel inventory
@@ -93,6 +110,7 @@ export default function AboutScreen() {
         setInventories(inventories)
         const result = await db.runAsync('UPDATE inventory  SET id_status = ? WHERE id_inventory = ?', 2, selectedInventory?.getIdInventory())
         closeModal()
+        setCloseInventoryModal(true)
     }
 
 
@@ -132,6 +150,8 @@ export default function AboutScreen() {
                     console.log("Une erreur est survenue lors de la création du fichier:  \n" + e);
                     closeModal()
                 });
+        }else{
+            closeModal()
         }
 
     }
@@ -170,7 +190,7 @@ export default function AboutScreen() {
     const getAllProducts = async () => {
         console.log(selectedInventory)
          let data = await db.getAllAsync(`SELECT * FROM product WHERE id_inventory=${selectedInventory?.getIdInventory()}`)
-         console.log('products: ', data)
+        //  console.log('products: ', data)
  
          let products = [] as Product[];
  
@@ -202,17 +222,48 @@ export default function AboutScreen() {
     }
 
 
+    const closeCloseInventoryModal = () => {
+        setCloseInventoryModal(false)
+    }
+
+    
+    const filterInventories = (key: string) => {
+        filter = key
+        setFilter(key)
+        switch (key){
+            case 'ongoing': {
+                let result = inventories.filter((inv)=>{
+                    return inv.getIdStatus() == 1
+                })
+                setCurrentInventories(result)
+                break
+            }
+            case 'close': {
+                let result = inventories.filter((inv)=>{
+                    return inv.getIdStatus() == 2
+                })
+                setCurrentInventories(result)
+                break
+            }
+            default: {
+                setCurrentInventories(inventories)
+                break
+            }
+            
+        }
+    }
+
     return (
         <View>
             <View className="flex items-center justify-center h-dvh bg-[#eff5f7] pt-5">
-                <Text className="text-left w-full pl-5 text-gray-600 text-lg mb-2">Inventaires</Text>
+                <Text className="text-left w-full pl-5 text-gray-600 text-lg mb-2">Inventaires: { currentInventories.length }</Text>
                 <View className="flex flex-row gap-5 items-center justify-center w-[98%] pb-1 mb-5 border-b border-1 border-gray-200">
-                    <Text className="bg-[#025c5821] py-2 px-5 rounded-3xl text-[#025C57]">Tout</Text>
-                    <Text className="bg-gray-200 py-2 px-5 rounded-3xl text-gray-500">En cours</Text>
-                    <Text className="bg-gray-200 py-2 px-5 rounded-3xl text-gray-500">Cloturé</Text>
+                    <Text onPress={()=>filterInventories('all')} className="py-2 px-5 rounded-3xl" style={filter === 'all' ? {backgroundColor: "#025c5821", color:"#025C57"} : {backgroundColor: "#fafafa", color:"gray"}}>Tout</Text>
+                    <Text onPress={()=>filterInventories('ongoing')} className="py-2 px-5 rounded-3xl" style={filter === 'ongoing' ? {backgroundColor: "#025c5821", color:"#025C57"} : {backgroundColor: "#fafafa", color:"gray"}}>En cours</Text>
+                    <Text onPress={()=>filterInventories('close')} className="py-2 px-5 rounded-3xl" style={filter === 'close' ? {backgroundColor: "#025c5821", color:"#025C57"} : {backgroundColor: "#fafafa", color:"gray"}}>Clôturé</Text>
                 </View>
                 <FlatList 
-                    data={inventories}
+                    data={currentInventories}
                     renderItem={
                         ({item, index}) => <Text> <InventoryCard inventory={item} openActionMenu={() => openModal(item, index)} /> </Text>
                     }
@@ -220,9 +271,7 @@ export default function AboutScreen() {
                     onRefresh={onRefresh}
                     keyExtractor={(item) => item.getIdInventory().toString()}
                     showsVerticalScrollIndicator={false}
-                    ListFooterComponent={ () => <Text> Total inventaires: { inventories.length } </Text> }
                     ListEmptyComponent={ () => <Text style={ {color: "#ff9900"} }> Aucun inventaires trouvé ! </Text> }
-                    ListFooterComponentStyle = {{position: "absolute", bottom: 0}}
                     contentContainerStyle={{ display: "flex", gap:15, flexDirection:"row", flexWrap:"wrap", alignItems: "center", minHeight:"100%", width: "100%",}}
                     />
             </View>
@@ -280,6 +329,7 @@ export default function AboutScreen() {
             </Modal>
 
             <ModalInfo icon={"checkmark-circle-sharp"} iconColor="#02c4ba" isVisible={exportModal} message="Fichier enregistré avec succès !" buttonText="OK" onClose={closeExportModal}/>
+            <ModalInfo icon={"checkmark-circle-sharp"} iconColor="#02c4ba" isVisible={closeInventoryModal} message="Inventaire cloturé avec succès !" buttonText="OK" onClose={closeCloseInventoryModal}/>
             <ModalInfo icon={"warning"} iconColor="#ff9900" isVisible={errorExportModal} message={error} buttonText="Réessayer" onClose={closeExportModal}/>
 
         </View>

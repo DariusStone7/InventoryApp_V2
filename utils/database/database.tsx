@@ -2,7 +2,7 @@ import * as SQLite from 'expo-sqlite';
 
 const connectToDatabse = async () => {
 
-    // await SQLite.deleteDatabaseAsync('test')
+    await SQLite.deleteDatabaseAsync('test')
     const db = await SQLite.openDatabaseAsync('test');
     console.log('Connection à la base de donnée: ', db)
     
@@ -11,8 +11,8 @@ const connectToDatabse = async () => {
             PRAGMA journal_mode = WAL;
             CREATE TABLE IF NOT EXISTS status (id_status INTEGER PRIMARY KEY NOT NULL, title TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS inventory (id_inventory INTEGER PRIMARY KEY NOT NULL, id_status INTEGER NOT NULL, title TEXT NOT NULL, created_at TEXT NOT NULL, update_at TEXT);
-            CREATE TABLE IF NOT EXISTS product (id_product INTEGER PRIMARY KEY NOT NULL, id_inventory INTEGER NOT NULL, name TEXT NOT NULL, conditionment TEXT NOT NULL, quantity REAL NOT NULL DEFAULT(0));
-            CREATE TABLE IF NOT EXISTS inventory_update (id_inventory_update INTEGER PRIMARY KEY NOT NULL, id_inventory INTEGER NOT NULL, id_product INTEGER NOT NULL, quantity REAL NOT NULL DEFAULT(0), updated_at TEXT);
+            CREATE TABLE IF NOT EXISTS product (id_product TEXT PRIMARY KEY NOT NULL, id_inventory INTEGER NOT NULL, name TEXT NOT NULL, conditionment TEXT NOT NULL, quantity REAL NOT NULL DEFAULT(0));
+            CREATE TABLE IF NOT EXISTS inventory_update (id_inventory_update INTEGER PRIMARY KEY NOT NULL, id_inventory INTEGER NOT NULL, id_product TEXT NOT NULL, quantity REAL NOT NULL DEFAULT(0), updated_at TEXT);
             ALTER TABLE inventory ADD CONSTRAINT fk_inventory_status FOREIGN KEY (id_status) REFERENCES status(id_status);
             ALTER TABLE product ADD CONSTRAINT IF NOT EXISTS fk_product_inventory FOREIGN KEY (id_inventory) REFERENCES inventory(id_inventory);
             ALTER TABLE inventory_update ADD CONSTRAINT IF NOT EXISTS fk_inventory_update_inventory FOREIGN KEY (id_inventory) REFERENCES inventory(id_inventory);

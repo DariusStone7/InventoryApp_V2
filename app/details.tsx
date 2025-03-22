@@ -12,6 +12,7 @@ import * as Sharing from 'expo-sharing';
 import { TextInput, ActivityIndicator } from 'react-native-paper';
 import ModalInfo from "@/components/modal";
 import * as SQLite from 'expo-sqlite';
+import Inventory from "@/models/Inventory";
 
 export default function DetailsScreen(){
 
@@ -29,36 +30,34 @@ export default function DetailsScreen(){
     let [formatErrorModal, setFormatErrorModal] = useState<boolean>(false);
     let [error, setError] = useState<any>();
     let [db, setDb] = useState<any>();
+    let [inventory, setInventory] = useState<Inventory>()
 
 
-    useFocusEffect( () => {
-        initProducts().then((productsList) => {
-            setcurrentProducts(productsList);
-            setProducts(productsList);
-        });
-    })
+    //initialisation de la liste de produits lorsque l'ecran est focus
+    useFocusEffect(
+        useCallback(() => {
+            initProducts().then((productsList) => {
+                setcurrentProducts(productsList);
+                setProducts(productsList);
+            });
 
-    //initialisation de la liste de produits lorsque le composant est monté
-    useEffect( () => {
-        
-        initProducts().then((productsList) => {
-            setcurrentProducts(productsList);
-            setProducts(productsList);
-        });
-
-        
-    }, []);
+        }, [])
+    );
 
 
     //Rechargement de la liste des produits lorsqu'on actualise l'écran
     const onRefresh = () => {
-
         setRefreshing(true);
         setcurrentProducts(products);
         setTimeout(() => { setRefreshing(false) }, 500);
-
     }
 
+    //Recupérer l'inventaire
+    const getInventory = async () => {
+        let data = await db.getFirstAsync(`SELECT * FROM inventory WHERE id_inventory=${idInventory}`)
+        let inv = new Inventory(data.id_inventory, data.id_status, data.title, data.created_at, data.update_at)
+        return inv
+    }
 
     //Recupérer la liste des produits correspondant à l'inventaire sélectionné
     const initProducts = async () => {
@@ -68,8 +67,12 @@ export default function DetailsScreen(){
             db = con
             setDb(db)
 
+            //Recupérer les information de l'inventaire après connection à la bd
+            let inv = await getInventory()
+            setInventory(inv)
+
             let data = await db.getAllAsync(`SELECT * FROM product WHERE id_inventory=${idInventory}`)
-            console.log('products: ', data)
+            // console.log('products: ', data)
 
             let products = [] as Product[];
     
@@ -87,7 +90,7 @@ export default function DetailsScreen(){
         }
         catch(e){
 
-            setError("Erreur lors de la récupération des produits" + e);
+            setError("Erreur lors de la récupération des produits\n" + e);
             setFormatErrorModal(true);
         }
         return products;
@@ -268,15 +271,20 @@ export default function DetailsScreen(){
     return (
         
         <View className="p-3 bg-[#eff5f7] h-screen" >
-            <Stack.Screen 
-                // options={{
-                //     headerRight: () => 
-                //     <View style={styles.buttons}>
-                //          <Ionicons name="save-outline" color="#fff" size={20} onPress={saveInventoryToFile}></Ionicons>
-                //          <Ionicons name="share-social-outline" color="#fff" size={20} onPress={shareFile}></Ionicons> 
-                //     </View> 
-                // }}
+            {inventory?.getIdStatus() == 2 ? (
+                <Stack.Screen 
+                    options={{
+                        headerRight: () => 
+                        <View style={styles.buttons}>
+                            <Ionicons name="save-outline" color="#fff" size={20} onPress={saveInventoryToFile}></Ionicons>
+                            <Ionicons name="share-social-outline" color="#fff" size={20} onPress={shareFile}></Ionicons> 
+                        </View> 
+                    }}
              />
+            ) : (
+                <></>
+            )}
+            
     
             <TextInput 
                 value={searchText}
@@ -309,16 +317,24 @@ export default function DetailsScreen(){
             <FlatList
                 data={currentProducts} 
                 renderItem={ 
-                    ({item, index}) => <Text onPress={()=>{openModal(item, index)}} style={styles.productCard}> <ProductComponent product={item}/> </Text>
+                    ({item, index}) => inventory?.getIdStatus() == 2 ? (
+                        <Text style={styles.productCard}> <ProductComponent product={item}/> </Text>
+                    ):(
+                        <Text onPress={()=>{openModal(item, index)}} style={styles.productCard}> <ProductComponent product={item}/> </Text>
+                    )
                 }
                 keyExtractor={(item) => item.getId()}
+                initialNumToRender={10}  // Charge d'abord 10 éléments
+                maxToRenderPerBatch={10} // Charge les éléments par lots de 10
+                windowSize={2} // Garde 2 pages en mémoire (avant et après l'affichage)
+                removeClippedSubviews={true} // Supprime les items hors écran pour économiser la mémoire
                 refreshing={refreshing}
                 onRefresh={onRefresh}
                 style={styles.flatlist}
                 showsVerticalScrollIndicator={ false } 
                 ListFooterComponent={ () => <Text> Nombre de Produits: { currentProducts.length } / { products.length } </Text> }
                 ListEmptyComponent={ () => <Text style={ {color: "#ff9900"} }> Aucun produit trouvé ! </Text> }
-                ListFooterComponentStyle = {{position: "absolute", bottom: 0}}
+                // ListFooterComponentStyle = {{position: "absolute", bottom: 0}}   
                 contentContainerStyle = {styles.flatlistContainer}
             />
 
