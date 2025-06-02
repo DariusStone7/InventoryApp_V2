@@ -25,12 +25,11 @@ export default function DetailsScreen(){
     let [selectedPoduct, setSelectedProduct] = useState<Product>();
     let [selectedIndex, setSelectedIndex] = useState<Number>();
     let [searching, setSearching] = useState<boolean>(false);
-    let [saveModal, setSaveModal] = useState<boolean>(false);
-    let [saveErrorModal, setSaveErrorModal] = useState<boolean>(false);
-    let [formatErrorModal, setFormatErrorModal] = useState<boolean>(false);
-    let [error, setError] = useState<any>();
     let [db, setDb] = useState<any>();
     let [inventory, setInventory] = useState<Inventory>()
+    let [infoModal, setInfoModal] = useState<boolean>(false);
+    let [infoModalMessage, setInfoModalMessage] = useState<string>('Action effectué avec succès');
+    let [infoModalIcon, setInfoModalIcon] = useState<string>('warning');
 
 
     //initialisation de la liste de produits lorsque l'ecran est focus
@@ -59,6 +58,11 @@ export default function DetailsScreen(){
         return inv
     }
 
+    //close info modal
+    const closeInfoModal = () => {
+        setInfoModal(false);
+    }
+
     //Recupérer la liste des produits correspondant à l'inventaire sélectionné
     const initProducts = async () => {
         console.log('id_inventory; ', idInventory)
@@ -73,9 +77,7 @@ export default function DetailsScreen(){
 
             let data = await db.getAllAsync(`SELECT * FROM product WHERE id_inventory=${idInventory}`)
             // console.log('products: ', data)
-
             let products = [] as Product[];
-    
             data.forEach( (row: any) => {
     
                 let product = new Product(row.id_product, row.id_conditionnement, row.name, row.conditionment, row.quantity);
@@ -86,21 +88,16 @@ export default function DetailsScreen(){
             // console.log(products)
 
             return products;
-            
         }
         catch(e){
-
-            setError("Erreur lors de la récupération des produits\n" + e);
-            setFormatErrorModal(true);
+            setInfoModalMessage("Erreur lors de la récupération des produits\n" + e);
+            setInfoModal(true);
         }
         return products;
-
     }
-
 
     //Filtre de la liste des produits en fonction de la valeur de recherche saisie
     const filterProducts = (key:string) => {
-        
         // setSearching(false)
         currentProducts = products;
         setcurrentProducts(currentProducts);
@@ -122,17 +119,17 @@ export default function DetailsScreen(){
         // setSearching(true);
     }
 
-
     const removeSearchKey = () => {
         setSearchText("")
         filterProducts("")
     }
-
     
     //Mis à jour de la quantité du produit selectionné avec la nouvelle valeur saisir
     const updateQuantity = async (quantity: string) => {
 
-        let product = new Product(selectedPoduct?.getId(), selectedPoduct?.getIdConditionnement(), selectedPoduct?.getName(), selectedPoduct?.getCondtionment(), selectedPoduct?.getQuantity());
+        let product
+        if(selectedPoduct) 
+        product = new Product(selectedPoduct?.getId(), selectedPoduct?.getIdConditionnement(), selectedPoduct?.getName(), selectedPoduct?.getCondtionment(), selectedPoduct?.getQuantity());
 
         product?.setQuantity(Number(quantity));
         
@@ -140,18 +137,12 @@ export default function DetailsScreen(){
         setSelectedProduct(product);
 
         //mise à jour de la quantité dans la liste courante
-        currentProducts.forEach((product) => {
-            if( product.getId() == selectedPoduct?.getId()){
-                product.setQuantity(Number(quantity));
-                return;
-            }
-        });
+        currentProducts[Number(selectedIndex)].setQuantity(Number(quantity))
 
         //mise à jour de la quantité dans toute la liste
         products.forEach((product, index) => {
             if( product.getId() == selectedPoduct?.getId()){
                 product.setQuantity(Number(quantity));
-                setSelectedIndex(index);
                 return;
             }
         });
@@ -163,12 +154,9 @@ export default function DetailsScreen(){
         );
 
         //Mise à jour de la quantité du produit dans la base de donnée
-        let result = await updateProductQuantity.executeAsync({$quantity: product.getQuantity(), $id_product: product.getId()})
-        console.log('Mise à jour en bd', result)
-
-
+        let result = await updateProductQuantity.executeAsync({$quantity: product?.getQuantity(), $id_product: product?.getId()})
+        // console.log('Mise à jour en bd', result)
     }
-
 
     //Traitement lors de l'ouverture du modal
     const openModal = (product : Product, index: Number) => {
@@ -179,22 +167,11 @@ export default function DetailsScreen(){
         return null;
     }
 
-
     //Traitement lors de la cloture du modal de modification de la quantité d'un produit
     const closeModal = () => {
         setModalVisible(false);
-        console.log('Produit mis à jour: ', products[Number(selectedIndex)]);
-
+        // console.log('Produit mis à jour: ', products[Number(selectedIndex)]);
     }
-
-
-    //Cloture du modal aprés enregistrement du fichier
-    const closeSaveModal = () => {
-        setSaveModal(false);
-        setSaveErrorModal(false);
-        setFormatErrorModal(false);
-    }
-
 
     const formatFileData = ()=>{
         let data = "";
@@ -206,7 +183,6 @@ export default function DetailsScreen(){
         return data;
     }
 
-
     const saveInventoryToFile = async() => {
         
         //Demande de permission d'accès au stockage
@@ -214,29 +190,31 @@ export default function DetailsScreen(){
         const permission = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
 
         if(permission.granted){
-
             //Création et enregistrement du nouveau fichier
             await FileSystem.StorageAccessFramework.createFileAsync(permission.directoryUri, 'Inventaire', "text/plain")
                 .then( async (uri) => {
                     let data = formatFileData();
                     FileSystem.writeAsStringAsync(uri, data, { encoding: FileSystem.EncodingType.UTF8 })
-                    .then(r => setSaveModal(true))
+                    .then((r) => {
+                        setInfoModalMessage("Fichier enregistré avec succès !");
+                        setInfoModalIcon('checkmark-circle-sharp')
+                        setInfoModal(true)
+                    })
                     .catch(e => {
-                        setError("Une erreur est survenue lors de l'enregistrement: \n" + e);
-                        setSaveErrorModal(true);
-                        console.log("Une erreur est survenue lors de l'enregistrement:  \n" + e);
+                        setInfoModalMessage("Une erreur est survenue lors de l'enregistrement: \n" + e);
+                        setInfoModal(true);
+                        // console.log("Une erreur est survenue lors de l'enregistrement:  \n" + e);
                     });
 
                  })
                  .catch(e => {
-                    setError("Une erreur est survenue lors de la création du fichier: \n" + e);
-                    setSaveErrorModal(true);
-                    console.log("Une erreur est survenue lors de la création du fichier:  \n" + e);
+                    setInfoModalMessage("Une erreur est survenue lors de la création du fichier: \n" + e);
+                    setInfoModal(true);
+                    // console.log("Une erreur est survenue lors de la création du fichier:  \n" + e);
                 });
         }
 
     }
-
 
     //Partager le fichier
     const shareFile = async () => {
@@ -246,21 +224,18 @@ export default function DetailsScreen(){
 
         FileSystem.writeAsStringAsync(newFileUri, data, { encoding: FileSystem.EncodingType.UTF8 })
             .catch(e => {
-                setError("Une erreur est survenue lors de la génération du fichier:  \n" + e);
-                setSaveErrorModal(true);
-                console.log("Une erreur est survenue lors de la génération du fichier:  \n" + e);
+                setInfoModalMessage("Une erreur est survenue lors de la génération du fichier:  \n" + e);
+                setInfoModal(true);
+                // console.log("Une erreur est survenue lors de la génération du fichier:  \n" + e);
             });
         
         await Sharing.shareAsync(newFileUri)
             .catch(e => {
-                setError("Une erreur est survenue lors du partage du fichier:  \n" +  + e);
-                setSaveErrorModal(true);
-                console.log("Une erreur est survenue lors du partage du fichier:  \n" + e);
-
+                setInfoModalMessage("Une erreur est survenue lors du partage du fichier:  \n" +  + e);
+                setInfoModal(true);
+                // console.log("Une erreur est survenue lors du partage du fichier:  \n" + e);
             });
-
     }
-
 
     const animate = () => {
         setSearching(false);
@@ -285,7 +260,6 @@ export default function DetailsScreen(){
                 <></>
             )}
             
-    
             <TextInput 
                 value={searchText}
                 placeholder="Rechercher..."
@@ -324,8 +298,8 @@ export default function DetailsScreen(){
                     )
                 }
                 keyExtractor={(item) => item.getId()}
-                initialNumToRender={10}  // Charge d'abord 10 éléments
-                maxToRenderPerBatch={10} // Charge les éléments par lots de 10
+                initialNumToRender={100}  // Charge d'abord 10 éléments
+                maxToRenderPerBatch={100} // Charge les éléments par lots de 10
                 windowSize={2} // Garde 2 pages en mémoire (avant et après l'affichage)
                 removeClippedSubviews={true} // Supprime les items hors écran pour économiser la mémoire
                 refreshing={refreshing}
@@ -356,7 +330,7 @@ export default function DetailsScreen(){
                                 cursorColor="#000"
                                 selectionColor="#bb661639"
                                 mode="outlined"
-                                outlineStyle={{borderColor:"#fff", }}
+                                outlineStyle={{borderColor:"#0000002d", }}
                                 contentStyle={{paddingLeft: 0, margin:0}}
                             />
                         </TouchableOpacity>
@@ -364,10 +338,7 @@ export default function DetailsScreen(){
                 </KeyboardAvoidingView>
             </Modal>
 
-            <ModalInfo icon={"checkmark-circle-sharp"} iconColor="#02c4ba" isVisible={saveModal} message="Fichier enregistré avec succès !" buttonText="OK" onClose={closeSaveModal}/>
-            <ModalInfo icon={"warning"} iconColor="#ff9900" isVisible={saveErrorModal} message={error} buttonText="Réessayer" onClose={closeSaveModal}/>
-            <ModalInfo icon={"warning"} iconColor="#ff9900" isVisible={formatErrorModal} message={error} buttonText="Réessayer" onClose={closeSaveModal}/>
-
+            <ModalInfo icon={infoModalIcon} iconColor="#02c4ba" isVisible={infoModal} message={infoModalMessage} buttonText="OK" onClose={closeInfoModal}/>
         </View>
 
     )
@@ -400,7 +371,7 @@ const styles = StyleSheet.create({
         height: "auto",
     },
     modal:{
-       backgroundColor: "#dfeaee",
+       backgroundColor: "#ffffff",
        width: "100%",
        height: "45%",
        position: "absolute",
@@ -431,7 +402,7 @@ const styles = StyleSheet.create({
     input:{
         height: 50,
         width: "100%",
-        backgroundColor: "#fff",
+        backgroundColor: "#ffffff",
         paddingHorizontal: 10,
         borderRadius: 10,
         marginTop: 4,

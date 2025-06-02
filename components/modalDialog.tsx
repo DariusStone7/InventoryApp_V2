@@ -7,12 +7,14 @@ type props={
     iconColor: string,
     isVisible: boolean,
     message: string,
-    buttonText: string,
+    validateButtonText: string,
+    cancelButtonText: string,
+    onValidate: ()=> void,
     onClose: ()=> void,
 }
 
 
-export default function modal({icon, iconColor, isVisible, message, buttonText, onClose}:props){
+export default function modal({icon, iconColor, isVisible, message, validateButtonText, cancelButtonText, onValidate, onClose}:props){
 
     return (
         <Modal animationType="fade" visible={isVisible} transparent={ true }>
@@ -26,8 +28,10 @@ export default function modal({icon, iconColor, isVisible, message, buttonText, 
                                 <Text className="text-md text-gray-600 text-center">{message} </Text>
                             </View>
                         </ScrollView>
-
-                        <Text onPress={onClose} className="text-md font-normal text-right pr-3">{buttonText}</Text>
+                        <View className="flex flex-row items-center justify-end gap-5">
+                            <Text onPress={onClose} className="text-md font-normal text-right pr-3">{cancelButtonText}</Text>
+                            <Text onPress={onValidate} className="text-md font-normal text-right pr-3">{validateButtonText}</Text>
+                        </View>
                     </View>
                 </TouchableOpacity>
             </TouchableOpacity>

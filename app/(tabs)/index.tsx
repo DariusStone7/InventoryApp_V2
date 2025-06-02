@@ -17,12 +17,10 @@ export default function Index() {
   const [selectedFileUri, setSelectedFileUri] = useState<string>();
   const [selectedFileName, setSelectedFileName] = useState<string | undefined>();
   const [selectedFileData, setSelectedFileData] = useState<string | undefined>();
-  let [fileErrorModalIsVisible, setFileErrorModalIsVisible] = useState<boolean>(false);
-  let [notFileModalIsVisible, setNotFileModalIsVisible] = useState<boolean>(false);
-  let [formatErrorModal, setFormatErrorModal] = useState<boolean>(false);
-  let [errorModal, setErrorModal] = useState<boolean>(false);
-  let [error, setError] = useState<any>();
   let [db, setDb] = useState<any>();
+  let [importing, setImporting] = useState<boolean>(false);
+  let [infoModal, setInfoModal] = useState<boolean>(false);
+  let [infoModalMessage, setInfoModalMessage] = useState<string>('Action effectué avec succès');
 
 
   useEffect( () => {
@@ -34,6 +32,11 @@ export default function Index() {
     db = await connectToDatabse()
       // db = await SQLite.openDatabaseAsync('test');
       setDb(db)
+  }
+
+  //close info modal
+  const closeInfoModal = () => {
+      setInfoModal(false);
   }
 
   const documentPicker = async()=>{
@@ -48,14 +51,12 @@ export default function Index() {
       });
   
       if(!result.canceled){
-        
-        console.log(result);
-
+        // console.log(result);
         setSelectedFileName(result.assets[0].name);
 
         if(!(result.assets[0].name).toLowerCase()?.endsWith(".txt")){
-
-          setFileErrorModalIsVisible(true);
+          setInfoModalMessage("Vueillez selectionner un fichier texte (.txt) !")
+          setInfoModal(true)
           setSelectedFileName("");
 
           return;
@@ -68,14 +69,15 @@ export default function Index() {
         // console.log(fileData)
       }
       else{
-        setNotFileModalIsVisible(true)
+        setInfoModalMessage("Vous n'avez selectionné aucun fichier !")
+        setInfoModal(true)
       }
     }catch(e){
       setSelectedFileData("");
       setSelectedFileName("");
       setSelectedFileUri("");
-      setErrorModal(true);
-      setError("Une erreur est survenue: " + e);
+      setInfoModalMessage("Une erreur est survenue: " + e);
+      setInfoModal(true)
     }
     
 
@@ -85,24 +87,25 @@ export default function Index() {
   const createInventory = async () => {
     let date = new Date()
     let inventory_date = date.toLocaleDateString('fr-FR') + ' ' + date.toLocaleTimeString('fr-FR')
-    console.log( inventory_date)
+    // console.log( inventory_date)
     let result = await db.runAsync('INSERT INTO inventory (id_status, title, created_at, update_at) VALUES (?, ?, ?, ?)', 1, selectedFileName, inventory_date, inventory_date )
-    console.log('inventory:', result.lastInsertRowId, result.changes)
+    // console.log('inventory:', result.lastInsertRowId, result.changes)
 
     return result.lastInsertRowId
   }
 
 
   const importInventory = async () => {
-
+    if(!selectedFileData) return;
+    setImporting(true)
     const idInventory = await createInventory()
-    console.log('inventory:', idInventory)
+    // console.log('inventory:', idInventory)
 
     let products = [] as Product[];
 
     try{
           let data = selectedFileData?.split(/\r?\n/);
-          console.log(data?.length)
+          // console.log(data?.length)
           // console.log(data)
 
           data = data?.filter( item => item !== "" );
@@ -120,7 +123,7 @@ export default function Index() {
               let product = new Product(lineSplit[0] + '1', lineSplit[0], name, cdt, Number(lineSplit[2]));
               
               let result = await insertProduct.executeAsync({$id_conditionnement:product.getIdConditionnement() ,$id_inventory: idInventory, $name: product.getName(), $conditionment: product.getCondtionment(), $quantity: product.getQuantity()})
-              console.log('product:', result.lastInsertRowId, result.changes);
+              // console.log('product:', result.lastInsertRowId, result.changes);
               products.push(product);
 
           });
@@ -128,33 +131,15 @@ export default function Index() {
           setSelectedFileData("");
           setSelectedFileName("");
           setSelectedFileUri("");
+          setImporting(false)
+
           router.navigate('/inventory');
       }
       catch(e){
-          setError("Erreur lors du traitement du fichier: \n" + e);
-          setFormatErrorModal(true);
+          setImporting(false)
+          setInfoModalMessage("Erreur lors du traitement du fichier: \n" + e);
+          setInfoModal(true);
       }
-  }
-
-
-  const goToEditscreen = () => {
-
-    let data = selectedFileData?.split(/\r?\n/);
-    console.log(data?.length)
-    console.log(data)
-    router.push(`/details?fileData=${data}&fileUri=${selectedFileUri}&fileName=${selectedFileName}`);
-
-  }
-
-
-  //fermeture du modal
-  const closeModal = () => {
-      
-    setFileErrorModalIsVisible(false);
-    setNotFileModalIsVisible(false);
-    setErrorModal(false);
-    setFormatErrorModal(false);
-
   }
 
 
@@ -168,20 +153,21 @@ export default function Index() {
         <View className="w-full ">
           <View className="flex flex-row gap-2 justify-between items-center bg-white p-3" >
             <Text className="text-xl flex-1 h-6 text-base overflow-x-scroll"> {selectedFileName}</Text>
-            <Button label="Importer" icon="arrow-redo-circle-outline" onPress={importInventory} type="outline"/>
+            <Button label={importing ? "Importation" : "Importer"} icon="arrow-redo-circle-outline" onPress={importInventory} type="outline"/>
           </View>
           <ScrollView className="border border-t-1 border-gray-200 h-[250px] overflow-scroll bg-white" >
-            <Text>{selectedFileData}</Text>
+            {selectedFileData ? (
+              <Text>{selectedFileData}</Text>
+            ) : (
+              <Text className="text-center">Chargement en cours...</Text>
+            )}
           </ScrollView>
         </View>
       ) : (
         <View></View>
       )}
 
-      <ModalInfo icon={"warning"} iconColor="#ff9900" isVisible={fileErrorModalIsVisible} message="Vueillez selectionner un fichier texte (.txt) !" buttonText="OK" onClose={closeModal}/>
-      <ModalInfo icon={"warning"} iconColor="#ff9900" isVisible={notFileModalIsVisible} message="Vous n'avez selectionné aucun fichier !" buttonText="Réessayer" onClose={closeModal}/>
-      <ModalInfo icon={"error"} iconColor="#ff9900" isVisible={errorModal} message={error} buttonText="Réessayer" onClose={closeModal}/>
-      <ModalInfo icon={"warning"} iconColor="#ff9900" isVisible={formatErrorModal} message={error} buttonText="Réessayer" onClose={closeModal}/>
+      <ModalInfo icon={"warning"} iconColor="#ff9900" isVisible={infoModal} message={infoModalMessage} buttonText="OK" onClose={closeInfoModal}/>
       
     </View>
   );

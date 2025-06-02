@@ -15,12 +15,12 @@ export default function InventoryCard (props: InventoryProps) {
             {/* <Text className="absolute right-1 top-1" onPress={props.openActionMenu}> <Ionicons name="ellipsis-vertical-circle-outline" size={20} color="lightgray" /> </Text> */}
             <View className="h-[60px] flex items-center justify-center mt-1">
                 {props.inventory.getIdStatus() == 1 ? (
-                    <Ionicons name="cube" size={48} color="#ff990050" />
-                ) : (
                     <Ionicons name="cube" size={48} color="lightgray" />
+                ) : (
+                    <Ionicons name="cube" size={48} color="#ff990050" />
                 )}
             </View>
-            <Text className="text-gray-600 text-sm truncate h-5">{props.inventory.getTitle()}</Text>
+            <Text className="text-gray-600 text-center text-sm truncate h-5">{props.inventory.getTitle()}</Text>
         </Pressable>
     )
 }

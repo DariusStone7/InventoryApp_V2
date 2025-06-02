@@ -36,4 +36,7 @@ export default class Inventory {
     public setStatus(idStatus: number): void{
         this.id_status = idStatus;
     }
+     public setTitle(newTitle: string): void{
+        this.title = newTitle;
+    }
 }
