@@ -153,13 +153,13 @@ export default function Index() {
         <View className="w-full ">
           <View className="flex flex-row gap-2 justify-between items-center bg-white p-3" >
             <Text className="text-xl flex-1 h-6 text-base overflow-x-scroll"> {selectedFileName}</Text>
-            <Button label={importing ? "Importation" : "Importer"} icon="arrow-redo-circle-outline" onPress={importInventory} type="outline"/>
+            <Button label={importing ? "En cours..." : "Importer"} icon="arrow-redo-circle-outline" onPress={importInventory} type="outline"/>
           </View>
           <ScrollView className="border border-t-1 border-gray-200 h-[250px] overflow-scroll bg-white" >
             {selectedFileData ? (
               <Text>{selectedFileData}</Text>
             ) : (
-              <Text className="text-center">Chargement en cours...</Text>
+              <Text className="text-center pt-10">Chargement en cours...</Text>
             )}
           </ScrollView>
         </View>

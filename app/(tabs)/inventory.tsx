@@ -57,7 +57,7 @@ export default function AboutScreen() {
         inventories = []
         setInventories(inventories)
 
-        const result = await db.getAllAsync('SELECT * FROM inventory ORDER BY created_at DESC')
+        const result = await db.getAllAsync('SELECT * FROM inventory ORDER BY id_inventory DESC')
         result.forEach((row: any) => {
             let inventory = new Inventory(row.id_inventory, row.id_status, row.title.split('.')[0], row.created_at, row.update_at);
             // console.log(inventory)
